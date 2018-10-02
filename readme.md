@@ -17,19 +17,19 @@
     - [5.3. Enable Authentication in the influxdb configuration](#53-enable-authentication-in-the-influxdb-configuration)
     - [5.4. https reverse proxy using nginx (Optional)](#54-https-reverse-proxy-using-nginx-optional)
     - [5.5. deploy with docker compose](#55-deploy-with-docker-compose)
-    - [Create database and user for bme280](#create-database-and-user-for-bme280)
-    - [Data Source setting on grafana](#data-source-setting-on-grafana)
+    - [5.6. Create database and user for bme280](#56-create-database-and-user-for-bme280)
+    - [5.7. Data Source setting on grafana](#57-data-source-setting-on-grafana)
 - [6. Send metrics to influxDB](#6-send-metrics-to-influxdb)
-    - [send metrics on the docker host](#send-metrics-on-the-docker-host)
-    - [send metrics using ssh tunnel](#send-metrics-using-ssh-tunnel)
-- [7. kibana dashboard example](#7-kibana-dashboard-example)
+    - [6.1. send metrics on the docker host](#61-send-metrics-on-the-docker-host)
+    - [6.2. send metrics using ssh tunnel](#62-send-metrics-using-ssh-tunnel)
+- [7. grafana dashboard example](#7-grafana-dashboard-example)
 
 <!-- /TOC -->
 
 ## 1.1. Visualizing Sensor Data
 
-<a href="https://raw.githubusercontent.com/wiki/kodamap/kibana-elasticsearch/images/influx_grafana_bme280.png">
-<img src="https://raw.githubusercontent.com/wiki/kodamap/kibana-elasticsearch/images/influx_grafana_bme280.png" alt="kibana dashboard" style="width:75%;height:auto;" ></a>
+<a href="https://raw.githubusercontent.com/wiki/kodamap/sensor_bme280/images/influx_grafana_bme280.png">
+<img src="https://raw.githubusercontent.com/wiki/kodamap/sensor_bme280/images/influx_grafana_bme280.png" alt="kibana dashboard" style="width:75%;height:auto;" ></a>
 
 
 # 2. Devices and Tools
@@ -56,8 +56,8 @@ https://www.switch-science.com/catalog/2323/
 
 - Wiring
 
-<a href="https://raw.githubusercontent.com/wiki/kodamap/kibana-elasticsearch/images/bme280_pin_laytout.png">
-<img src="https://raw.githubusercontent.com/wiki/kodamap/kibana-elasticsearch/images/bme280_pin_laytout.png" alt="wiring" style="width:75%;height:auto;" ></a>
+<a href="https://raw.githubusercontent.com/wiki/kodamap/sensor_bme280/images/bme280_pin_laytout.png">
+<img src="https://raw.githubusercontent.com/wiki/kodamap/sensor_bme280/images/bme280_pin_laytout.png" alt="wiring" style="width:75%;height:auto;" ></a>
 
 - Raspberry Pi  Pinout
 
@@ -176,7 +176,7 @@ root_url = %(protocol)s://%(domain)s:%(http_port)s/grafana/
 $ cp sensor_bme280/dockerfiles/grafana/grafana.ini /var/data/grafana/
 ```
 
-Configure Nginx to work as revers proxy for kibana. Set location prefix (/grafana/)
+Configure Nginx to work as revers proxy for grafana. Set location prefix (/grafana/)
 
 ```sh
 $ vi sensor_bme280/dockerfiles/nginx/default.conf
@@ -257,7 +257,7 @@ You can access grafana gui
 https://<your ip address>/grafana/
 ```
 
-## Create database and user for bme280
+## 5.6. Create database and user for bme280
 
 Create database(name is sensor) on docker.
 
@@ -293,7 +293,7 @@ sensor   ALL PRIVILEGES
 > exit
 ```
 
-## Data Source setting on grafana
+## 5.7. Data Source setting on grafana
 
 Login the grafana ui 
 
@@ -315,7 +315,7 @@ Click "Save & Test" and "Data source is working"
 
 # 6. Send metrics to influxDB
 
-## send metrics on the docker host
+## 6.1. send metrics on the docker host
 
 Send metrics test on the docker host
 
@@ -333,7 +333,7 @@ $ curl -XPOST 'http://localhost:8086/query?db=sensor&u=sensor&p=password' --data
 {"results":[{"statement_id":0,"series":[{"name":"temperature","columns":["time","location","node","unit","value"],"values":[["2018-10-02T07:15:12.537207759Z","home","localhost","Celcius",20]]}]}]}
 ```
 
-## send metrics using ssh tunnel
+## 6.2. send metrics using ssh tunnel
 
 You can use ssh tunnel to put data on influxdb for secure connection.
 check the ip address of infuldb
@@ -405,10 +405,10 @@ HTTP/1.1 204 No Content
 .
 ```
 
-# 7. kibana dashboard example
+# 7. grafana dashboard example
 
 Upload .json file "Sensor-1486613315807.json" from grafana ui (import dashboard).
 
 - select a influxdb data source: sensor
 
-You'll see "Temperature , Pressure and Humidity" on the kibana dashboard.
+You'll see "Temperature , Pressure and Humidity" on the grafana dashboard.
