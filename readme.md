@@ -298,16 +298,17 @@ sensor   ALL PRIVILEGES
 Login the grafana ui 
 
 - "Add data soruce"
-- Click "Save & Test" 
+- Click "Save & Test"
 
-Setting | Value
-- | - |
-Name | sensor
-Type | influxDB
-URL | http://influxdb:8086
-Database | sensor
-User | sensor
-Password | password (changeme!)
+
+| Setting | Value |
+| --- | --- |
+| Name | sensor |
+| Type | influxDB |
+| URL | http://influxdb:8086 |
+| Database | sensor |
+| User | sensor |
+| Password | password (change me!) |
 
 Click "Save & Test" and "Data source is working"
 
@@ -335,7 +336,7 @@ $ curl -XPOST 'http://localhost:8086/query?db=sensor&u=sensor&p=password' --data
 
 ## 6.2. send metrics using ssh tunnel
 
-You can use ssh tunnel to put data on influxdb for secure connection.
+You can use ssh tunnel to put data on influxdb with secure connection.
 check the ip address of infuldb
 
 ```sh
@@ -360,7 +361,7 @@ Script example
 
 - Change "PYTHON" path(example script uses pyenv for python3.x ).
 ref: https://github.com/pyenv/pyenv
-- I changed output in /home/pi/BME280/Python35/bme280.py specified "PY_SCRIPT" (ref: https://github.com/SWITCHSCIENCE/BME280)
+- I changed output for python3.x in /home/pi/BME280/Python35/bme280.py specified by "PY_SCRIPT" (script ref: https://github.com/SWITCHSCIENCE/BME280)
 
 
 ```sh
@@ -394,7 +395,7 @@ done
 echo ${RESULT} >> ${PY_SCRIPT_LOG}
 ```
 
-You'll get status code "204 No Content" each metrics (tempreture, humidity and pressure)
+You'll get status code "204" on each metrics (tempreture, humidity and pressure)
 
 
 ```sh
@@ -407,8 +408,6 @@ HTTP/1.1 204 No Content
 
 # 7. grafana dashboard example
 
-Upload .json file "Sensor-1486613315807.json" from grafana ui (import dashboard).
-
-- select a influxdb data source: sensor
+Upload .json file "Sensor-1486613315807.json" from grafana ui (import dashboard menu) and select a influxdb data source: "sensor"
 
 You'll see "Temperature , Pressure and Humidity" on the grafana dashboard.
