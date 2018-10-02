@@ -1,0 +1,58 @@
+version: "3"
+services:
+  influxdb:
+    image: influxdb:1.4.2
+    #build: ./influxdb
+    container_name: influxdb
+    volumes:
+      - "/var/data/influxdb/influxdb.conf:/etc/influxdb/influxdb.conf"
+      - "/var/data/influxdb/data:/var/lib/influxdb/data"
+    ports:
+      - "8086:8086"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10240k"
+        max-file: "10"
+    environment:
+      - INFLUXDB_ADMIN_ENABLED=true
+      - INFLUXDB_ADMIN_USER=admin 
+      - INFLUXDB_ADMIN_PASSWORD=changeme
+    restart: unless-stopped
+  grafana:
+    image: grafana/grafana:5.2.4
+    build: ./grafana
+    container_name: grafana
+    links:
+      - influxdb
+    volumes:
+      - "/var/data/grafana:/var/lib/grafana"
+      - "/var/data/grafana/grafana.ini:/etc/grafana/grafana.ini"
+    ports:
+      - "3000:3000"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10240k"
+        max-file: "10"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=changeme
+    restart: unless-stopped
+  nginx:
+    image: kodamap/kibana-elasticsearch:nginx-latest
+    build: ./nginx
+    container_name: nginx
+    links:
+      - grafana
+    volumes:
+    #  - "/var/data/nginx/fullchain.pem:/etc/nginx/conf.d/fullchain.pem:ro"
+    #  - "/var/data/nginx/privkey.pem:/etc/nginx/conf.d/privkey.pem:ro"
+      - "/var/data/nginx/default.conf:/etc/nginx/conf.d/default.conf"
+    ports:
+      - "443:443"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10240k"
+        max-file: "10"
+    restart: unless-stopped
