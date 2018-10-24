@@ -15,7 +15,7 @@
     - [5.1. Prerequisites](#51-prerequisites)
     - [5.2. Deploy grafana and influxdb](#52-deploy-grafana-and-influxdb)
     - [5.3. Enable Authentication in the influxdb configuration](#53-enable-authentication-in-the-influxdb-configuration)
-    - [5.4. https reverse proxy using nginx (Optional)](#54-https-reverse-proxy-using-nginx-optional)
+    - [5.4. https reverse proxy using nginx](#54-https-reverse-proxy-using-nginx)
     - [5.5. deploy with docker compose](#55-deploy-with-docker-compose)
     - [5.6. Create database and user for bme280](#56-create-database-and-user-for-bme280)
     - [5.7. Data Source setting on grafana](#57-data-source-setting-on-grafana)
@@ -115,7 +115,7 @@ hum :  62.13 ％
 
 ## 5.1. Prerequisites
 
-Before you can run deployment, you'll need the following installed in your local enviroment.
+You need the following installed in your local enviroment.
 
 - docker-ce
 https://docs.docker.com/install/linux/docker-ce/centos/
@@ -159,7 +159,7 @@ $ vi sensor_bme280/dockerfiles/influxdb/influxdb.conf
 $ cp sensor_bme280/dockerfiles/influxdb/influxdb.conf /var/data/influxdb/
 ```
 
-## 5.4. https reverse proxy using nginx (Optional)
+## 5.4. https reverse proxy using nginx
 
 Set root_url for using prefix (/grafana/)
 
@@ -176,7 +176,7 @@ root_url = %(protocol)s://%(domain)s:%(http_port)s/grafana/
 $ cp sensor_bme280/dockerfiles/grafana/grafana.ini /var/data/grafana/
 ```
 
-Configure Nginx to work as revers proxy for grafana. Set location prefix (/grafana/)
+Configure Nginx to work as reverse proxy for grafana. Set location prefix (/grafana/)
 
 ```sh
 $ vi sensor_bme280/dockerfiles/nginx/default.conf
