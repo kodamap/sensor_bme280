@@ -21,7 +21,6 @@
     - [5.7. Data Source setting on grafana](#57-data-source-setting-on-grafana)
 - [6. Send metrics to influxDB](#6-send-metrics-to-influxdb)
     - [6.1. send metrics on the docker host](#61-send-metrics-on-the-docker-host)
-    - [6.2. send metrics using ssh tunnel](#62-send-metrics-using-ssh-tunnel)
 - [7. grafana dashboard example](#7-grafana-dashboard-example)
 
 <!-- /TOC -->
@@ -38,8 +37,8 @@
 | ---  | --- |
 | bme280   | Sensor module |
 | Raspberry Pi Zero | IoT device |
-| Grafana  | Visualizer    |
-| Influxdb | Time series database |
+| Grafana ( v6.2.5 )  | Visualizer    |
+| Influxdb ( v1.7.7 ) | Time series database |
 
 - BME280
 
@@ -182,7 +181,7 @@ Configure Nginx to work as reverse proxy for grafana. Set location prefix (/graf
 $ vi sensor_bme280/dockerfiles/nginx/default.conf
 
 server {
-    listen 443;
+    listen 443 ssl;
 
     ssl_certificate /etc/nginx/conf.d/server.crt;
     ssl_certificate_key /etc/nginx/conf.d/server.key;
@@ -190,7 +189,7 @@ server {
     # ssl_certificate /etc/nginx/conf.d/fullchain.pem;
     # ssl_certificate_key /etc/nginx/conf.d/privkey.pem;
 
-    ssl on;
+    #ssl on;
     ssl_session_cache builtin:1000 shared:SSL:10m;
     ssl_protocols TLSv1 TLSv1.1 TLSv1.2;
     ssl_ciphers HIGH:!aNULL:!eNULL:!EXPORT:!CAMELLIA:!DES:!MD5:!PSK:!RC4;
@@ -277,8 +276,9 @@ Create sensor user and grant READ/WRITE privileges to sensor user
 $ cd sensor_bme280/dockerfiles/
 $ sudo /usr/local/bin/docker-compose exec influxdb sh
 # influx -username admin -password changeme
-Connected to http://localhost:8086 version 1.4.2
-InfluxDB shell version: 1.4.2
+Connected to http://localhost:8086 version 1.7.7
+InfluxDB shell version: 1.7.7
+> use sensor
 > create user sensor with PASSWORD 'password'
 > show users
 user   admin
@@ -334,29 +334,6 @@ $ curl -XPOST 'http://localhost:8086/query?db=sensor&u=sensor&p=password' --data
 {"results":[{"statement_id":0,"series":[{"name":"temperature","columns":["time","location","node","unit","value"],"values":[["2018-10-02T07:15:12.537207759Z","home","localhost","Celcius",20]]}]}]}
 ```
 
-## 6.2. send metrics using ssh tunnel
-
-You can use ssh tunnel to put data on influxdb with secure connection.
-check the ip address of infuldb
-
-```sh
-$ sudo docker inspect influxdb | grep IPAddress
-            "SecondaryIPAddresses": null,
-            "IPAddress": "",
-                    "IPAddress": "172.18.0.2",
-```
-
-Connect to the docker host using ssh tunnel from Raspberry Pi 
-
-```sh
-$ autossh -t -t <user>@<docker host> -p <ssh port> -L <local port of influxdb api port>:<influxdb ip address>:<remote port of influxdb api port>
-
-# example1:
-$ autossh -t -t core@172.25.250.20 -p 22 -L 38086:172.18.0.2:8086
-# example2: You may want to autossh when boot (/etc/rc.local)
-su - pi -s /bin/bash -c "autossh -t -t core@172.25.250.20 -p 22 -L 38086:172.18.0.2:8086"
-```
-
 Script example
 
 - Change "PYTHON" path(example script uses pyenv for python3.x ).
@@ -399,8 +376,8 @@ You'll get status code "204" on each metrics (tempreture, humidity and pressure)
 
 
 ```sh
-# connect to localhost port 38086 using ssh tunnel.
-$ pi@sensor2:~/BME280 $ ./send_metrics.sh localhost 38086
+# connect to localhost port 8086
+$ pi@sensor2:~/BME280 $ ./send_metrics.sh localhost 8086
 HTTP/1.1 204 No Content
 .
 .
