@@ -22,6 +22,7 @@
 - [6. Send metrics to influxDB](#6-send-metrics-to-influxdb)
     - [6.1. send metrics on the docker host](#61-send-metrics-on-the-docker-host)
 - [7. grafana dashboard example](#7-grafana-dashboard-example)
+- [8. Let's encrypt Certbot auto renew](#8-lets-encrypt-certbot-auto-renew)
 
 <!-- /TOC -->
 
@@ -37,8 +38,8 @@
 | ---  | --- |
 | bme280   | Sensor module |
 | Raspberry Pi Zero | IoT device |
-| Grafana ( v6.2.5 )  | Visualizer    |
-| Influxdb ( v1.7.7 ) | Time series database |
+| Grafana ( v6.7.1)  | Visualizer    |
+| Influxdb ( v1.7.10 ) | Time series database |
 
 - BME280
 
@@ -114,16 +115,18 @@ hum :  62.13 ％
 
 ## 5.1. Prerequisites
 
-You need the following installed in your local enviroment.
+You need to be installed bellow  on your docker host.
 
 - docker-ce
-https://docs.docker.com/install/linux/docker-ce/centos/
+https://docs.docker.com/install/linux/docker-ce/
 
 - docker-compose
 https://docs.docker.com/compose/install/#install-compose
 
 
 ## 5.2. Deploy grafana and influxdb
+
+On your docker host
 
 ```sh
 git clone https://github.com/kodamap/sensor_bme280
@@ -135,6 +138,7 @@ create host storage
 sudo mkdir -p /var/data/grafana ; sudo chmod 777 /var/data/grafana
 sudo mkdir -p /var/data/influxdb ; sudo chmod 777 -R /var/data/influxdb
 sudo mkdir -p /var/data/nginx ; sudo chmod 777 -R /var/data/nginx
+sudo mkdir -p /var/data/certbot
 ```
 
 ## 5.3. Enable Authentication in the influxdb configuration
@@ -186,10 +190,9 @@ server {
     ssl_certificate /etc/nginx/conf.d/server.crt;
     ssl_certificate_key /etc/nginx/conf.d/server.key;
     ## replace this when you use lets encrypt certificate
-    # ssl_certificate /etc/nginx/conf.d/fullchain.pem;
-    # ssl_certificate_key /etc/nginx/conf.d/privkey.pem;
+    #ssl_certificate /etc/letsencrypt/live/<your domain fqdn>/fullchain.pem;
+    #ssl_certificate_key /etc/letsencrypt/live/<your domain fqdn>/privkey.pem;
 
-    #ssl on;
     ssl_session_cache builtin:1000 shared:SSL:10m;
     ssl_protocols TLSv1 TLSv1.1 TLSv1.2;
     ssl_ciphers HIGH:!aNULL:!eNULL:!EXPORT:!CAMELLIA:!DES:!MD5:!PSK:!RC4;
@@ -218,7 +221,7 @@ Modify the enviroment valiable "GF_SECURITY_ADMIN_PASSWORD".
 $ vi sensor_bme280/dockerfiles/docker-compose.yml
 
   grafana:
-    image: grafana/grafana:5.2.4
+    image: grafana/grafana:6.7.1
     build: ./grafana
     container_name: grafana
     links:
@@ -276,8 +279,10 @@ Create sensor user and grant READ/WRITE privileges to sensor user
 $ cd sensor_bme280/dockerfiles/
 $ sudo /usr/local/bin/docker-compose exec influxdb sh
 # influx -username admin -password changeme
-Connected to http://localhost:8086 version 1.7.7
-InfluxDB shell version: 1.7.7
+
+Connected to http://localhost:8086 version 1.7.10
+InfluxDB shell version: 1.7.10
+
 > use sensor
 > create user sensor with PASSWORD 'password'
 > show users
@@ -348,10 +353,10 @@ PORT=$2
 NODE=`hostname`
 LOCATION="home"
 STREAMS="temperature:Celcius humidity:Percent pressure:hPa"
-PYTHON=/home/pi/.pyenv/shims/python
-PY_SCRIPT=/home/pi/BME280/Python35/bme280.py
-PY_SCRIPT_TMP=/home/pi/BME280/Python35/bme280.tmp
-PY_SCRIPT_LOG=/home/pi/BME280/Python35/bme280.log
+PYTHON=/home/pi/venv/bin/python
+PY_SCRIPT=/home/pi/BME280/Python3/bme280.py
+PY_SCRIPT_TMP=/home/pi/BME280/Python3/bme280.tmp
+PY_SCRIPT_LOG=/home/pi/BME280/Python3/bme280.log
 EXEC_DATE=`date +%Y-%m-%d" "%H:%M:%S`
 NANO="000000000"
 UNIXTIME=`date -d "${EXEC_DATE}" +%s`
@@ -388,3 +393,78 @@ HTTP/1.1 204 No Content
 Upload .json file "Sensor-1486613315807.json" from grafana ui (import dashboard menu) and select a influxdb data source: "sensor"
 
 You'll see "Temperature , Pressure and Humidity" on the grafana dashboard.
+
+# 8. Let's encrypt Certbot auto renew
+
+https://certbot.eff.org/lets-encrypt/debianbuster-nginx
+
+
+Following instruction above, configure nginx Dockerfile as bellow
+
+```sh
+$ vi sensor_bme280/dockerfiles/nginx/Dockerfile
+
+RUN apt-get update -y
+RUN apt-get install certbot python-certbot-nginx cron -y
+
+CMD ["nginx", "-g", "daemon off;"]
+```
+
+Get a certificate in the nginx container 
+
+```sh
+$ docker-compose exec nginx /bin/bash
+
+root@32d5f0acc8d0:/# certbot certonly --nginx
+```
+
+Test automatical renew and verify crontab 
+
+```sh 
+root@32d5f0acc8d0:/# certbot renew --dry-run
+root@32d5f0acc8d0:/# cat /etc/cron.d/certbot
+SHELL=/bin/sh
+PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
+
+0 */12 * * * root test -x /usr/bin/certbot -a \! -d /run/systemd/system && perl -e 'sleep int(rand(43200))' && certbot -q renew
+```
+
+New Ceriticates save in `/etc/letsencrypt/` where is a shared volume on the host `/var/data/certbot` 
+
+```sh
+$ vi docker-compose.yml
+..
+  nginx:
+  ..
+    volumes:
+      - "/var/data/nginx/default.conf:/etc/nginx/conf.d/default.conf"
+      - "/var/data/certbot:/etc/letsencrypt"
+  ..
+```
+
+Now you are ready for let's encrypt, modify `ssl_certificate` in the nginx config  and restart nginx.
+
+
+```sh
+$ vi /var/data/nginx/default.conf
+
+server {
+    listen 443 ssl;
+
+    #ssl_certificate /etc/nginx/conf.d/server.crt;
+    #ssl_certificate_key /etc/nginx/conf.d/server.key;
+    ## replace this when you use lets encrypt certificate
+    ssl_certificate /etc/letsencrypt/live/<your domain fqdn>/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/<your domain fqdn>/privkey.pem;
+    .
+    .
+```
+
+
+
+
+
+
+
+
+

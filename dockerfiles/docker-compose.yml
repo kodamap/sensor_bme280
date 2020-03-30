@@ -1,7 +1,7 @@
 version: "3"
 services:
   influxdb:
-    image: influxdb:1.7.7
+    image: influxdb:1.7.10
     container_name: influxdb
     volumes:
       - "/var/data/influxdb/influxdb.conf:/etc/influxdb/influxdb.conf"
@@ -19,7 +19,7 @@ services:
       - INFLUXDB_ADMIN_PASSWORD=changeme
     restart: unless-stopped
   grafana:
-    image: grafana/grafana:6.2.5
+    image: grafana/grafana:6.7.1
     container_name: grafana
     links:
       - influxdb
@@ -43,9 +43,8 @@ services:
     links:
       - grafana
     volumes:
-    #  - "/var/data/nginx/fullchain.pem:/etc/nginx/conf.d/fullchain.pem:ro"
-    #  - "/var/data/nginx/privkey.pem:/etc/nginx/conf.d/privkey.pem:ro"
       - "/var/data/nginx/default.conf:/etc/nginx/conf.d/default.conf"
+      - "/var/data/certbot:/etc/letsencrypt"
     ports:
       - "443:443"
       - "80:80"
