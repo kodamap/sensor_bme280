@@ -164,10 +164,6 @@ $ vi sensor_bme280/dockerfiles/influxdb/influxdb.conf
   .
 ```
 
-```sh
-$ cp sensor_bme280/dockerfiles/influxdb/influxdb.conf /var/data/influxdb/
-```
-
 ## 5.4. https reverse proxy using nginx
 
 Set root_url for using prefix (/grafana/)
@@ -181,9 +177,6 @@ $ vi sensor_bme280/dockerfiles/grafana/grafana.ini
 root_url = %(protocol)s://%(domain)s:%(http_port)s/grafana/
 ```
 
-```sh
-$ cp sensor_bme280/dockerfiles/grafana/grafana.ini /var/data/grafana/
-```
 
 Configure Nginx to work as reverse proxy for grafana. Set location prefix (/grafana/)
 
@@ -217,10 +210,6 @@ server {
 }
 ```
 
-```sh
-$ cp sensor_bme280/dockerfiles/nginx/default.conf /var/data/nginx/
-```
-
 Modify the enviroment valiable "GF_SECURITY_ADMIN_PASSWORD".
 
 ```sh
@@ -232,9 +221,6 @@ $ vi sensor_bme280/dockerfiles/docker-compose.yml
     container_name: grafana
     links:
       - influxdb
-    volumes:
-      - "/var/data/grafana:/var/lib/grafana"
-      - "/var/data/grafana/grafana.ini:/etc/grafana/grafana.ini"
     ports:
       - "3000:3000"
     logging:
@@ -250,13 +236,13 @@ $ vi sensor_bme280/dockerfiles/docker-compose.yml
 
 ```sh
 $ cd sensor_bme280/dockerfiles/
-$ sudo /usr/local/bin/docker-compose up --build -d
-$ sudo /usr/local/bin/docker-compose ps
-  Name            Command           State           Ports
-------------------------------------------------------------------
+$ docker-compose up --build -d
+$ docker-compose ps
+  Name            Command           State                    Ports
+------------------------------------------------------------------------------------
 grafana    /run.sh                  Up      0.0.0.0:3000->3000/tcp
 influxdb   /entrypoint.sh influxd   Up      0.0.0.0:8086->8086/tcp
-nginx      /run.sh                  Up      0.0.0.0:443->443/tcp
+nginx      /run.sh                  Up      0.0.0.0:443->443/tcp, 0.0.0.0:80->80/tcp
 ```
 
 You can access grafana gui
@@ -435,24 +421,33 @@ PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
 0 */12 * * * root test -x /usr/bin/certbot -a \! -d /run/systemd/system && perl -e 'sleep int(rand(43200))' && certbot -q renew
 ```
 
-New Ceriticates save in `/etc/letsencrypt/` where is a shared volume on the host `/var/data/certbot` 
+New Ceriticates save in `/etc/letsencrypt/` that is a shared volume on the docker-host `certbot-data (ex. /var/lib/docker/volumes/dockerfiles_certbot-data/_data)` 
 
 ```sh
 $ vi docker-compose.yml
-..
+
   nginx:
-  ..
+    #image: nginx/nginx:latest
+    build: ./nginx
+    container_name: nginx
+    links:
+      - grafana
     volumes:
-      - "/var/data/nginx/default.conf:/etc/nginx/conf.d/default.conf"
-      - "/var/data/certbot:/etc/letsencrypt"
-  ..
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
+      - certbot-data:/etc/letsencryp
+..
+volumes:
+  influx-data:
+  grafana-data:
+  certbot-data
+  nginx:
 ```
 
 Now you are ready for let's encrypt, modify `ssl_certificate` in the nginx config  and restart nginx.
 
 
 ```sh
-$ vi /var/data/nginx/default.conf
+$ vi ./nginx/default.conf
 
 server {
     listen 443 ssl;
