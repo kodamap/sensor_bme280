@@ -82,6 +82,7 @@ $ sudo raspi-config
 ## 4.2. Test BME280
 
 ```sh
+$ sudo apt install i2c-tools -y
 $ i2cdetect -y 1
 
      0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f
@@ -100,15 +101,29 @@ $ i2cdetect -y 1
 Clone SWITCHSCIENCE BME280 Repository
 
 ```sh
+# script for python 2.7
 $ git clone https://github.com/SWITCHSCIENCE/BME280
-```
-
-```sh
 $ python2.7 Python27/bme280_sample.py
 
 temp : 31.17  ℃
 pressure :  999.84 hPa
 hum :  62.13 ％
+```
+
+Python3 environment
+
+```sh
+$ sudo apt install python3-pip python3-venv
+$ python3 -m venv venv
+$ . venv/bin/activate
+$ pip3 install smbus2
+$ git clone https://github.com/kodamap/sensor_bme280
+
+$ python3 Python3/bme280.py
+
+temperature : 31.44  ℃
+pressure : 1004.24 hPa
+humidity :  74.29 ％
 ```
 
 # 5. Visualization - Grafana + Influxdb
@@ -130,15 +145,6 @@ On your docker host
 
 ```sh
 git clone https://github.com/kodamap/sensor_bme280
-```
-
-create host storage
-
-```sh
-sudo mkdir -p /var/data/grafana ; sudo chmod 777 /var/data/grafana
-sudo mkdir -p /var/data/influxdb ; sudo chmod 777 -R /var/data/influxdb
-sudo mkdir -p /var/data/nginx ; sudo chmod 777 -R /var/data/nginx
-sudo mkdir -p /var/data/certbot
 ```
 
 ## 5.3. Enable Authentication in the influxdb configuration
